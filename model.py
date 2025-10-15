@@ -1,0 +1,14 @@
+import math
+import tensorflow as tf
+from einops.layers.tensorflow import Rearrange
+
+def gelu(x):
+    """Smoothened Gaussian Error Linear Unit activation function.
+    args:
+        x: input tensor
+    returns:
+        activated output tensor after applying gelu"""
+    fn = 0.5 * x * (1.0 + tf.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * tf.pow(x, 3))))
+    return tf.keras.activations.get(fn)
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
