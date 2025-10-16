@@ -8,8 +8,8 @@ def gelu(x):
         x: input tensor
     returns:
         output tensor after applying gelu"""
-    out = 0.5 * x * (1.0 + tf.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * tf.pow(x, 3))))
-    return out
+    fn = 0.5 * x * (1.0 + tf.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * tf.pow(x, 3))))
+    return fn
 
 class PatchExtract(tf.keras.layers.Layer):
     """Extracts patches from the input image"""
@@ -52,5 +52,34 @@ class MLP(tf.keras.layers.Layer):
     def call(self, x):
         return self.ff(x)
 
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
+class Attention(tf.keras.layers.Layer):
+    """Multi-head self attention layer"""
+    def __init__(self, dim, heads=8):
+        super().__init__()
+        self.heads = heads
+        self.scale = dim ** -0.5
+        
+        self.to_qkv = tf.keras.layers.Dense(dim * 3, use_bias=False)
+        self.to_out = tf.keras.layers.Dense(dim)
+        
+        self.rearrange_qkv = Rearrange('b n (qkv h d) -> qkv b h n d', qkv=3, h=self.heads)
+        self.rearrange_out = Rearrange('b h n d -> b n (h d)')
+        
+    def call(self, x):
+        qkv = self.to_qkv(x)
+        qkv = self.rearrange_qkv(x)
+        
+        q = qkv[0]
+        k = qkv[1]
+        v = qkv[2]
+        
+        mul = tf.einsum('bhid,bhjd->bhij',q, k) * self.scale
+        attn = tf.nn.softmax(mul, axis=-1)  
+        
+        out = tf.einsum('bhij,bhjd->bhid', attn, v)
+        out = self.rearrange_out(out)
+        out = self.to_out(out)
+        
+        return out
+        
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             
