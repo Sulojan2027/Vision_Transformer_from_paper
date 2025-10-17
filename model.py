@@ -81,6 +81,68 @@ class Attention(tf.keras.layers.Layer):
         out = self.to_out(out)
         
         return out
+
+class Transformer(tf.keras.Model):
+    """Transformer block consisting of attention and MLP layers"""
+
+    def __init__(self, dim, depth, heads, mlp_dim):
+        super().__init__()
+        layers = []
+        for _ in range(depth):
+            layers.extend([
+                Residual(PreNorm(dim, Attention(dim, heads = heads))),
+                Residual(PreNorm(dim, FeedForward(dim, mlp_dim)))
+            ])
+        self.net = tf.keras.Sequential(layers)
+
+    def call(self, x):
+        return self.net(x)
     
-        
+
+class ViT(tf.keras.Model):
+    """Vision Transformer model"""
+
+    def __init__(self, *, image_size, patch_size, num_classes, dim, depth, heads, mlp_dim, channels=3):
+        super().__init__()
+        assert image_size % patch_size == 0, 'image dimensions must be divisible by the patch size'
+        num_patches = (image_size // patch_size) ** 2
+        patch_dim = channels * patch_size ** 2
+
+        self.patch_size = patch_size
+        self.dim = dim
+        self.pos_embedding = self.add_weight("position_embeddings",
+                                             shape=[num_patches + 1,
+                                                    dim],
+                                             initializer=tf.keras.initializers.RandomNormal(),
+                                             dtype=tf.float32)
+        self.patch_to_embedding = tf.keras.layers.Dense(dim)
+        self.cls_token = self.add_weight("cls_token",
+                                         shape=[1,
+                                                1,
+                                                dim],
+                                         initializer=tf.keras.initializers.RandomNormal(),
+                                         dtype=tf.float32)
+
+        self.rearrange = Rearrange('b c (h p1) (w p2) -> b (h w) (p1 p2 c)', p1=self.patch_size, p2=self.patch_size)
+
+        self.transformer = Transformer(dim, depth, heads, mlp_dim)
+
+        self.to_cls_token = tf.identity
+
+        self.mlp_head = tf.keras.Sequential([tf.keras.layers.Dense(mlp_dim, activation=get_activation('gelu')),
+            
+            
+                                        tf.keras.layers.Dense(num_classes)])
+    def call(self, img):
+        x = self.rearrange(img)
+        x = self.patch_to_embedding(x)
+        b, n, _ = x.shape
+
+        cls_tokens = tf.broadcast_to(self.cls_token, [b, 1, self.dim])
+        x = tf.concat([cls_tokens, x], axis=1)
+        x += self.pos_embedding[:, :n + 1, :]
+
+        x = self.transformer(x)
+        x = self.to_cls_token(x[:, 0])
+        return self.mlp_head(x)     
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
