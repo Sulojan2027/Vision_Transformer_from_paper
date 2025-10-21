@@ -128,17 +128,17 @@ class ViT(tf.keras.Model):
             )
         
         self.transformer = Transformer(dim, depth, heads, mlp_dim)
-        self.to_cls_token = tf.identity
+        self.to_cls_token = tf.keras.layers.Identity()
         self.mlp_head = tf.keras.Sequential([
             tf.keras.layers.Dense(mlp_dim, activation=tf.keras.activations.get(gelu)),
             tf.keras.layers.Dense(num_classes)
         ])
     
     def call(self, img):
+        b = tf.shape(img)[0]
         x = self.patch_extractor(img)
         x = self.patch_to_embedding(x)
-        b, n, _ = x.shape
-
+        
         cls_tokens = tf.broadcast_to(self.cls_token, [b, 1, self.dim])
         x = tf.concat([cls_tokens, x], axis=1)
         x += self.pos_embedding
