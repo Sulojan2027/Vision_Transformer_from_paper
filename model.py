@@ -138,7 +138,11 @@ class ViT(tf.keras.Model):
         b = tf.shape(img)[0]
         x = self.patch_extractor(img)
         x = self.patch_to_embedding(x)
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> 320b1e62609769d64f6f57a0c8fcb57335a0be25
         cls_tokens = tf.broadcast_to(self.cls_token, [b, 1, self.dim])
         x = tf.concat([cls_tokens, x], axis=1)
         x += self.pos_embedding
