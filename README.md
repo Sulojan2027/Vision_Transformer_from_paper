@@ -1,4 +1,4 @@
-# Vision Transformer (ViT) — From Scratch and Fine-Tuned on CIFAR-10
+# Vision Transformer (ViT) — From Scratch
 
 This project implements the **Vision Transformer (ViT)** architecture **from scratch**, based on the seminal paper:
 
