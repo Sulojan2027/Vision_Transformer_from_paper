@@ -16,8 +16,9 @@ class PatchExtract(tf.keras.layers.Layer):
     def __init__(self, patch_size):
         super().__init__()
         self.patch_size = patch_size
-        self.rearrange = Rearrange('b (h p1) (w p2) c -> b (h w) (p1 p2 c)', p1=patch_size, p2=patch_size)
-        
+        self.rearrange = Rearrange('b (h p1) (w p2) c -> b (h w) (p1 p2 c)',
+                                   p1=patch_size,
+                                   p2=patch_size)
     def call(self, img):
         return self.rearrange(img)
 
@@ -58,11 +59,11 @@ class Attention(tf.keras.layers.Layer):
         super().__init__()
         self.heads = heads
         self.scale = dim ** -0.5
-        
         self.to_qkv = tf.keras.layers.Dense(dim * 3, use_bias=False)
         self.to_out = tf.keras.layers.Dense(dim)
-        
-        self.rearrange_qkv = Rearrange('b n (qkv h d) -> qkv b h n d', qkv=3, h=self.heads)
+        self.rearrange_qkv = Rearrange('b n (qkv h d) -> qkv b h n d',
+                                       qkv=3, h=self.heads
+                                    )
         self.rearrange_out = Rearrange('b h n d -> b n (h d)')
         
     def call(self, x):
@@ -75,11 +76,9 @@ class Attention(tf.keras.layers.Layer):
         
         mul = tf.einsum('bhid,bhjd->bhij',q, k) * self.scale
         attn = tf.nn.softmax(mul, axis=-1)  
-        
         out = tf.einsum('bhij,bhjd->bhid', attn, v)
         out = self.rearrange_out(out)
         out = self.to_out(out)
-        
         return out
 
 class Transformer(tf.keras.Model):
@@ -138,11 +137,7 @@ class ViT(tf.keras.Model):
         b = tf.shape(img)[0]
         x = self.patch_extractor(img)
         x = self.patch_to_embedding(x)
-<<<<<<< HEAD
-
-=======
         
->>>>>>> 320b1e62609769d64f6f57a0c8fcb57335a0be25
         cls_tokens = tf.broadcast_to(self.cls_token, [b, 1, self.dim])
         x = tf.concat([cls_tokens, x], axis=1)
         x += self.pos_embedding
