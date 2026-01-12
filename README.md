@@ -2,54 +2,71 @@
 
 This project implements the **Vision Transformer (ViT)** architecture **from scratch**, based on the seminal paper:
 
-> **"An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale"**  
-> *Dosovitskiy et al., Google Brain, 2021*
+> **"An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale"** > *Dosovitskiy et al., Google Brain, 2021*
 
-While our implementation closely follows the original paper, it is important to note that **Vision Transformers are extremely data-hungry**. Training ViT models from scratch on small datasets like **CIFAR-10** typically leads to underfitting and limited accuracy.  
+While our implementation closely follows the original paper, it is important to note that **Vision Transformers are extremely data-hungry**. Training ViT models from scratch on smaller datasets (like **CIFAR-10**) often leads to underfitting and limited accuracy compared to Convolutional Neural Networks (CNNs).
 
-To overcome this limitation, we also **fine-tuned a pre-trained ViT model** (trained on a large-scale dataset) for the CIFAR-10 classification task. This approach significantly improved accuracy and convergence speed.
+To overcome this limitation and demonstrate the architecture's true potential, we also **fine-tuned a pre-trained ViT model** (trained on a large-scale dataset like ImageNet-21k) for the CIFAR-10 classification task. This approach significantly improved accuracy and convergence speed.
 
 ---
 
-##  Architecture Overview
+## Architecture Overview
 
 <p align="center">
-  <img src="./Images/vit_figure.png" alt="Vision Transformer Architecture" width="700" height="700">
+  <img src="./Images/vit_figure.png" alt="Vision Transformer Architecture" width="700">
 </p>
 
-The architecture follows the original ViT-B/16 configuration with:
-- Patch embedding (16×16)
-- Positional encoding
+The architecture follows the original **ViT-B/16** configuration, comprising:
+- Patch embeddings (16×16)
+- Learnable positional encodings
 - Multi-head self-attention layers
 - MLP blocks
 - Classification token ([CLS])
-- Layer normalization and final dense classifier
+- Layer normalization and a final dense classifier
 
 ---
 
-##  Pretrained Model and Fine-Tuning
+## Custom ViT Results
 
-We used the **pre-trained ViT model** from Kaggle’s TensorFlow Hub:
+We implemented the complete Vision Transformer architecture from scratch and trained it on smaller datasets (**CIFAR-10**, **OXFORD-IIIT**).
+
+<p align="center">
+  <img src="./Images/metrics.png" alt="Custom ViT results" width="700">
+</p>
+
+While the custom implementation achieved decent results, the performance highlights the necessity of large-scale pre-training for Transformer-based vision models.
+
+---
+
+## Pre-trained Model and Fine-Tuning
+
+To leverage the full power of the ViT architecture, we fine-tuned a model pre-trained on a massive dataset. We utilized the **ViT-B16** model from Kaggle’s TensorFlow Hub:
 
 🔗 [ViT-B16 Classification Model on Kaggle](https://www.kaggle.com/models/spsayakpaul/vision-transformer/TensorFlow2/vit-b16-classification/1)
 
-This model was fine-tuned on CIFAR-10 for improved performance.  
-The fine-tuning process used transfer learning techniques while keeping the transformer backbone frozen initially and unfreezing in later stages.
+The fine-tuning process employed transfer learning techniques, keeping the transformer backbone frozen initially and gradually unfreezing layers in later stages to adapt to CIFAR-10.
 
----
+### Example Usage
 
-##  Example Usage
-
-You can easily load and use the pre-trained model via TensorFlow Hub:
+You can load and use the pre-trained model via TensorFlow Hub as follows:
 
 ```python
 import tensorflow_hub as hub
 import tensorflow as tf
 
-# Load the pretrained ViT model
+# Load the pretrained ViT-B16 model
+model_url = "[https://www.kaggle.com/models/spsayakpaul/vision-transformer/TensorFlow2/vit-b16-classification/1](https://www.kaggle.com/models/spsayakpaul/vision-transformer/TensorFlow2/vit-b16-classification/1)"
+
 model = tf.keras.Sequential([
-    hub.KerasLayer("https://www.kaggle.com/models/spsayakpaul/vision-transformer/TensorFlow2/vit-b8-classification/1")
+    hub.KerasLayer(model_url)
 ])
 
-# Example prediction
-predictions = model.predict(images)
+# Example prediction shape check
+# Ensure your input images are resized to 224x224 (typical for ViT)
+# predictions = model.predict(images)
+```
+
+## Overall Results Comparison
+By utilizing the pre-trained ViT, we were able to surpass standard CNN baselines on most classification tasks. This confirms that while ViTs are data-hungry, transfer learning makes them highly effective even for smaller datasets.
+
+<p align="center"> <img src="./Images/overall_results.png" alt="Results comparison" width="700"> </p>
