@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-class patchEmbedding(nn.Module):
+class PatchEmbedding(nn.Module):
     def __init__(
         self,
         in_channels: int,
@@ -31,7 +31,7 @@ class MultiheadSelfAttention(nn.Module):
     def __init__(
         self, 
         embed_dim: int,
-         num_heads:int
+        num_heads:int
     ):
         super().__init__()
         self.num_heads = num_heads
@@ -93,7 +93,7 @@ class MLP(nn.Module):
         x = self.drop(x)
         return x
 
-class TransformerEncoder(nn.Module):
+class TransformerBlock(nn.Module):
     def __init__(
         self, 
         embed_dim: int, 
@@ -127,3 +127,82 @@ class TransformerEncoder(nn.Module):
 
         return x
 
+class VisionTransformer(nn.Module):
+    def __init__(
+        self,
+        img_size: int = 224,
+        in_channels: int = 3,
+        patch_size: int = 16,
+        embed_dim: int = 768,
+        num_heads: int = 8,
+        depth: int = 12,
+        mlp_ratio: int = 4,
+        mlp_droput: float = 0.5,
+        num_classes: int = 1000
+
+    ):
+        super().__init__()
+
+        self.patch_embed = PatchEmbedding(
+            in_channels=in_channels,
+            embed_dim=embed_dim,
+            patch_size=patch_size
+        )
+        num_patches = (img_size // patch_size) ** 2
+
+        self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
+        self.pos_embedding = nn.Parameter(torch.zeros(1, num_patches + 1, embed_dim))
+
+        self.blocks = nn.ModuleList(*
+            [
+                TransformerBlock(
+                    embed_dim=embed_dim,
+                    num_heads=num_heads,
+                    mlp_ratio=mlp_ratio,
+                    dropout=mlp_droput
+                ) for _ in range(depth)
+            ]
+        )
+
+        self.mlp_head = nn.Sequential(
+            nn.LayerNorm(embed_dim),
+            nn.Linear(
+                in_features = embed_dim, 
+                out_features = num_classes)
+        )
+
+        nn.init.trunc_normal_(self.pos_embedding, std=0.02)
+        nn.init.trunc_normal_(self.cls_token, std=0.02)
+        self.apply(self._init_weights)
+
+    def _init_weights(self, m):
+        if isinstance(m, nn.Linear):
+            nn.init.trunc_normal_(m.weight, std=0.02)
+            if m.bias is not None:
+                nn.init.constant_(m.bias, 0)
+        elif isinstance(m, nn.LayerNorm):
+            nn.init.constant_(m.bias, 0)
+            nn.init.constant_(m.weight, 1.0)
+
+    def forward(self, x: torch.Tensor):
+        batch_size = x.shape[0]
+
+        # 1. Image patching
+        x = self.patch_embed(x)
+
+        # 2. Adding CLS token
+        cls_token = self.cls_token.expand(batch_size, -1, -1)
+        x = torch.cat((cls_token, x), dim=1)
+
+        # 3. Adding Positional embeddings
+        x = x + self.pos_embedding
+
+        # 4. Encoder blocks pass
+        x = self.blocks(x)
+        
+        cls_token_out = x[:, 0]
+
+        # 5. MLP head pass
+        logits = self.mlp_head(cls_token_out)
+
+        return logits
